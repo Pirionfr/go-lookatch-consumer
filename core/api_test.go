@@ -55,25 +55,53 @@ func TestBasicAuth(t *testing.T) {
 
 func TestGetSinks(t *testing.T) {
 	agentId := "48a7e6f5-fe4e-4579-a12b-c7d39729d546"
-	sinkName := "defalut"
 
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Test request parameters
+		equals(t, "/collectors/"+agentId+"/sinks", req.URL.String())
+		equals(t, "Bearer dXNlcjp0ZXN0", req.Header.Get("Authorization"))
+		// Send response to be tested
+		rw.WriteHeader(200)
+		rw.Write([]byte(`["querysink"]`))
+	}))
+
+	defer server.Close()
+
+	api = NewClient(server.URL, "dXNlcjp0ZXN0")
+
+	res, err := api.GetSinks(agentId)
+	ok(t, err)
+
+	equals(t, "querysink", res[0])
+
+}
+
+func TestGetSink(t *testing.T) {
+	agentId := "48a7e6f5-fe4e-4579-a12b-c7d39729d546"
+	sinkName := "querysink"
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Test request parameters
 		equals(t, "/collectors/"+agentId+"/sinks/"+sinkName, req.URL.String())
 		equals(t, "Bearer dXNlcjp0ZXN0", req.Header.Get("Authorization"))
 		// Send response to be tested
 		rw.WriteHeader(200)
-		rw.Write([]byte(`"token"`))
+		rw.Write([]byte(`{"brokers": [ "broker1:9093", "broker2:9093"], "provider": "ovh", "max_message_bytes": 10485760, "topic": "lookatch.test", "tls": true, "type": "kafka", "nb_producer": 3, "enabled": true, "consumer": { "user": "lookatch.test", "password": "test"}}`))
 	}))
 
 	defer server.Close()
 
-	api = NewClient(server.URL, "")
+	api = NewClient(server.URL, "dXNlcjp0ZXN0")
 
-	err := api.BasicAuth("user", "test")
-
+	res, err := api.GetSink(agentId, sinkName)
 	ok(t, err)
 
-	equals(t, "token", api.Token)
+	equals(t, "broker2:9093", res["brokers"].([]interface{})[1])
+	equals(t, "ovh", res["provider"])
+	equals(t, "lookatch.test", res["topic"])
+	equals(t, 3, int(res["nb_producer"].(float64)))
+	equals(t, true, res["tls"])
+	equals(t, "kafka", res["type"])
+	equals(t, "lookatch.test", res["consumer"].(map[string]interface{})["user"])
+	equals(t, "test", res["consumer"].(map[string]interface{})["password"])
 
 }

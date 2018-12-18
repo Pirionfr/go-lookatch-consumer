@@ -7,12 +7,12 @@ import (
 	"os"
 
 	"github.com/Shopify/sarama"
-	log "github.com/Sirupsen/logrus"
 	"github.com/bsm/sarama-cluster"
+	log "github.com/sirupsen/logrus"
 )
 
 // Consume consumes messages from Kafka
-func Consume(username string, password string, consumerGroup string, brokerAddrs string, topic string) <-chan *sarama.ConsumerMessage {
+func Consume(brokerAddrs string, topic string, username string, password string, consumerGroup string) <-chan *sarama.ConsumerMessage {
 
 	var config = cluster.NewConfig()
 	config.Net.TLS.Enable = true

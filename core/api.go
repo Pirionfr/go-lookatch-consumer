@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/juju/errors"
 	"io"
 	"io/ioutil"
@@ -69,14 +70,33 @@ func (a *Api) BasicAuth(username string, passwd string) error {
 	return nil
 }
 
-func (a *Api) GetSinks(agentId string) error {
+func (a *Api) GetSinks(agentId string) (anyJson []string, err error) {
 
-	_, err := a.CallAPI(GET, "/collectors/"+agentId+"/sinks", "")
-	return err
+	sinkList, err := a.CallAPI(GET, "/collectors/"+agentId+"/sinks", "")
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal([]byte(sinkList), &anyJson)
+	if err != nil {
+		return
+	}
+
+	return
+
 }
 
-func (a *Api) GetSink(agentId string, sinkName string) error {
+func (a *Api) GetSink(agentId string, sinkName string) (anyJson map[string]interface{}, err error) {
 
-	_, err := a.CallAPI(GET, "/collectors/"+agentId+"/sinks/"+sinkName, "")
-	return err
+	sink, err := a.CallAPI(GET, "/collectors/"+agentId+"/sinks/"+sinkName, "")
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal([]byte(sink), &anyJson)
+	if err != nil {
+		return
+	}
+	return
+
 }
